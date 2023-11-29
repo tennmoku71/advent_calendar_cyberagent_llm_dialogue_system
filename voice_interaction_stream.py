@@ -9,7 +9,7 @@ import time
 class Main():
 
     def __init__(self) -> None:
-        self.valid_stream = False
+        self.valid_stream = True
         vad = google_vad.GOOGLE_WEBRTC()
         vad_thread = threading.Thread(target=vad.vad_loop, args=(self.callback_vad, ))
         stt_thread = threading.Thread(target=google_stt.main, args=(self.callback_interim, self.callback_final,))
@@ -31,12 +31,15 @@ class Main():
             thread.join()
 
     def callback_interim(self, user_utterance):
+        print("interim", user_utterance)
         self.latest_user_utterance = user_utterance
 
     def callback_final(self, user_utterance):
+        print("final", user_utterance)
         self.latest_user_utterance = user_utterance
 
     def callback_vad(self, flag):
+        print("vad", flag)
         if flag == True:
             self.latest_user_utterance = None
         elif self.latest_user_utterance != None:
@@ -47,10 +50,26 @@ class Main():
         llm_result = self.llm.get(user_utterance)
         if self.valid_stream == False:
             agent_utterance = llm_result.choices[0].message.content
-            wav_data, _ = voicevox.get_audio_file_from_text(agent_utterance)
-            self.audio_play(wav_data)
+            wav_data, wav_length = voicevox.get_audio_file_from_text(agent_utterance)
+            self.audio_play(wav_data, wav_length)
+        else:
+            u = ""
+            for chunk in llm_result:
+                word = chunk.choices[0].delta.content
+                if word == None:
+                    break
+                u += word
+                for split_word in ["、","。", "？", "！"]:
+                    if split_word in u:
+                        print(u)
+                        wav_data, wav_length = voicevox.get_audio_file_from_text(u)
+                        self.audio_play(wav_data, wav_length)
+                        u = ""
+            if u != "":
+                wav_data, wav_length = voicevox.get_audio_file_from_text(u)
+                self.audio_play(wav_data, wav_length)
 
-    def audio_play(self, wav_data):
+    def audio_play(self, wav_data, wav_length):
         start_time = time.time()
         with open("tmp.wav", mode='bw') as f:
             f.write(wav_data)
@@ -58,6 +77,9 @@ class Main():
             print("応答までの時間", time.time() - self.time_user_speeching_end)
         self.time_user_speeching_end = None
         playsound("tmp.wav")
+
+        while time.time() - start_time < wav_length:
+            pass
 
 
 if __name__ == '__main__':

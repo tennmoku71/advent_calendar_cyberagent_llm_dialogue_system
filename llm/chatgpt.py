@@ -14,7 +14,7 @@ class ChatGPT():
             messages=self.dialogue_history,
             stream = self.valid_stream
         )
-        return completion.choices[0].message.content
+        return completion
 
     def set_agent_utterance(self, agent_utterance):
         self.dialogue_history.append({"role": "assistant", "content": agent_utterance})

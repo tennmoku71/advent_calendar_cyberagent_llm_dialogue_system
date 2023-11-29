@@ -3,6 +3,7 @@
 *.py[cod]
 *$py.class
 *.wav
+llm/models/*
 
 # C extensions
 *.so

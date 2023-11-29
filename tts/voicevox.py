@@ -28,6 +28,16 @@ def run_synthesis(query_data, speaker = 1):
             print('fail connect...', url)
             time.sleep(0.1)
 
+def extract_wav_length(query_data):
+    length = 0
+    for accent_phrase in query_data["accent_phrases"]:
+        for mora in accent_phrase["moras"]:
+            if mora["consonant_length"] != None:
+                length += mora["consonant_length"]
+            if mora["vowel_length"] != None:
+                length += mora["vowel_length"]
+    return length
+
 def get_audio_file_from_text(text):
     query_data = get_audio_query(text)
-    return run_synthesis(query_data)
+    return run_synthesis(query_data), extract_wav_length(query_data)

@@ -1,4 +1,11 @@
+# 概要
+
+LLMを用いたシンプルな音声対話システムです。
+
 # 環境設定
+
+googleとopenaiのキーをそれぞれ環境変数に登録してください。
+
 ```
 export GOOGLE_APPLICATION_CREDENTIALS=...
 ```
@@ -6,111 +13,66 @@ export GOOGLE_APPLICATION_CREDENTIALS=...
 export OPENAI_API_KEY=...
 ```
 
-
+pipモジュールをインストールします。
 ```
-wget https://github.com/GoogleCloudPlatform/python-docs-samples/raw/main/speech/microphone/transcribe_streaming_infinite.py -O stt/google_stt.py
-```
-modified listen_print_loop
-
-before
-```
-def listen_print_loop(responses: object, stream: object) -> object:
-
-[中略]
-
-        if result.is_final:
-            sys.stdout.write(GREEN)
-            sys.stdout.write("\033[K")
-            sys.stdout.write(str(corrected_time) + ": " + transcript + "\n")
-
-            stream.is_final_end_time = stream.result_end_time
-            stream.last_transcript_was_final = True
-
-            # Exit recognition if any of the transcribed phrases could be
-            # one of our keywords.
-            if re.search(r"\b(exit|quit)\b", transcript, re.I):
-                sys.stdout.write(YELLOW)
-                sys.stdout.write("Exiting...\n")
-                stream.closed = True
-                break
-        else:
-            sys.stdout.write(RED)
-            sys.stdout.write("\033[K")
-            sys.stdout.write(str(corrected_time) + ": " + transcript + "\r")
-
-            stream.last_transcript_was_final = False
-
-        return transcript
-```
-after
-```
-def listen_print_loop(responses: object, stream: object, callback_interim: object, callback_final: object) -> object:
-
-[中略]
-
-        if result.is_final:
-            sys.stdout.write(GREEN)
-            sys.stdout.write("\033[K")
-            sys.stdout.write(str(corrected_time) + ": " + transcript + "\n")
-
-            if callback_final != None:
-                callback_final(transcript)
-
-            stream.is_final_end_time = stream.result_end_time
-            stream.last_transcript_was_final = True
-
-            # Exit recognition if any of the transcribed phrases could be
-            # one of our keywords.
-            if re.search(r"\b(exit|quit)\b", transcript, re.I):
-                sys.stdout.write(YELLOW)
-                sys.stdout.write("Exiting...\n")
-                stream.closed = True
-                break
-        else:
-            sys.stdout.write(RED)
-            sys.stdout.write("\033[K")
-            sys.stdout.write(str(corrected_time) + ": " + transcript + "\r")
-
-            if callback_interim != None:
-                callback_interim(transcript)
-
-            stream.last_transcript_was_final = False
-
-    return transcript
+pip install -r requirements.txt
 ```
 
-modified main
+その後、voicevoxをインストールしてください。具体的なインストール方法は公式ページを参照してください。
+
+https://voicevox.hiroshiba.jp/
+
+
+# voice_interaction_base
+
+一番遅いモデルです。Google STTのfinalの終わりまで待ち、ChatGPTにリクエストを投げます。ただし応答内容の精度は良いです。
+
 ```
-def main() -> None:
-
-[中略]
-
-    config = speech.RecognitionConfig(
-        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=SAMPLE_RATE,
-        language_code="en-US",
-        max_alternatives=1,
-    )
-
-[中略]
-            listen_print_loop(responses, stream)
-```
-```
-def main(callback_interim, callback_final) -> None:
-
-[中略]
-
-    config = speech.RecognitionConfig(
-        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=SAMPLE_RATE,
-        language_code="ja-JP",
-        max_alternatives=1,
-    )
-
-[中略]
-
-            listen_print_loop(responses, stream, callback_interim, callback_final)
+python voice_interaction_base.py
 ```
 
+# voice_interaction
 
+Google STTのfinalが出力されるまでの時間が短縮されています。
 
+```
+python voice_interaction.py
+```
+
+# voice_interaction_stream
+
+リアルタイムもどきの方法で音声合成が行われます。
+
+```
+python voice_interaction_stream.py
+```
+
+# voice_interaction_llama2
+
+ChatGPTではなくllama2を用います。事前にモデルデータを準備しておく必要があります。
+
+```
+# bash
+> git clone https://github.com/ggerganov/llama.cpp
+> cd llama.cpp
+> make -j 8 LLAMA_CUBLAS=1
+> python
+    import huggingface_hub
+    huggingface_hub.snapshot_download(repo_id='elyza/ELYZA-japanese-Llama-2-7b-instruct', cache_dir="original_models")
+    exit()
+> python3 convert.py original_models/models--elyza--ELYZA-japanese-Llama-2-7b-instruct/snapshots/48fa08b3098a23d3671e09565499a4cfbaff1923 --outfile gguf-models/elyza.gguf
+> ./quantize gguf-models/elyza.gguf gguf-models/elyza-q8.gguf q8_0
+```
+
+生成された`gguf-models/elyza-q8.gguf`を`llm/models`に配置してください。
+次に、llama-cpp-pythonをインストールします。
+
+```
+CMAKE_ARGS="-DLLAMA_CUBLAS=on" FORCE_CMAKE=1 pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir -vv
+```
+
+以上で準備は完了です。実行してください。
+
+```
+python voice_interaction_stream.py
+```
