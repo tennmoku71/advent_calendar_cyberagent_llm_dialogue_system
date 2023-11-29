@@ -1,4 +1,4 @@
-openai==0.27.6
+openai
 google-api-python-client==2.86.0
 google-cloud-speech==2.19.0
 webrtcvad==2.0.10
