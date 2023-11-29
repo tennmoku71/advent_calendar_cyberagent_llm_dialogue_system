@@ -1,4 +1,12 @@
-# stt
+# 環境設定
+```
+export GOOGLE_APPLICATION_CREDENTIALS=...
+```
+```
+export OPENAI_API_KEY=...
+```
+
+
 ```
 wget https://github.com/GoogleCloudPlatform/python-docs-samples/raw/main/speech/microphone/transcribe_streaming_infinite.py -O stt/google_stt.py
 ```
@@ -105,8 +113,4 @@ def main(callback_interim, callback_final) -> None:
 ```
 
 
-
-```
-export GOOGLE_APPLICATION_CREDENTIALS=...
-```
 
