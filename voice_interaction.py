@@ -1,7 +1,9 @@
 from stt import google_stt
 from vad import google_vad
 from llm import chatgpt
+from tts import voicevox
 import threading
+from playsound import playsound
 
 class Main():
 
@@ -40,10 +42,18 @@ class Main():
 
     def main_process(self, user_utterance):
         llm_result = self.llm.get(user_utterance)
+        print("llm end", llm_result)
         if type(llm_result) == str:
             print(llm_result)
+            wav_data = voicevox.get_audio_file_from_text(llm_result)
+            self.audio_play(wav_data)
         else:
             print(llm_result)
+
+    def audio_play(self, wav_data):
+        with open("tmp.wav", mode='bx') as f:
+            f.write(wav_data)
+        playsound("tmp.wav")
 
 if __name__ == '__main__':
     ins = Main()

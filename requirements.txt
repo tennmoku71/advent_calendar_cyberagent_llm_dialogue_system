@@ -3,3 +3,5 @@ google-api-python-client==2.86.0
 google-cloud-speech==2.19.0
 webrtcvad==2.0.10
 PyAudio==0.2.13
+soundfile
+playsound
