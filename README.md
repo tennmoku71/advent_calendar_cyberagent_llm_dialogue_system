@@ -74,5 +74,5 @@ CMAKE_ARGS="-DLLAMA_CUBLAS=on" FORCE_CMAKE=1 pip install llama-cpp-python --forc
 以上で準備は完了です。実行してください。
 
 ```
-python voice_interaction_stream.py
+python voice_interaction_llama2.py
 ```
